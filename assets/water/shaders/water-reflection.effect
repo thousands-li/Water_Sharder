@@ -1,0 +1,216 @@
+CCEffect %{
+  techniques:
+  - passes:
+    - vert: water-vs:vert
+      frag: water-fs:frag
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+      blendState:
+        targets:
+        - blend: true
+          blendSrc: src_alpha
+          blendDst: one_minus_src_alpha
+          blendDstAlpha: one_minus_src_alpha
+      rasterizerState:
+        cullMode: none
+      properties:
+        alphaThreshold: { value: 0.5 }
+
+        tiling: { value: [1.0, 1.0], target: uvParams.xy, editor: { parent: USE_TILING } }
+        uvOffset: { value: [0.0, 0.0], target: waveTextureParams.zw, editor: { parent: USE_TILING } }
+        colorStepScale: { value: 1.0, target: uvParams.z, editor: { parent: USE_COLOR_STEP, slide: true, range: [0.0, 3.0], step: 0.01 } }
+        alphaStepScale: { value: 1.0, target: uvParams.w, editor: { parent: USE_ALPHA_STEP, slide: true, range: [0.0, 3.0], step: 0.01 } }
+
+        waveTexture: { value: white, editor: { parent: USE_WAVE } }
+        waveSpeed: { value: 0.08, target: waveParams.x, editor: { parent: USE_WAVE, slide: true, range: [-1.0, 1.0], step: 0.001 } }
+        waveStrength: { value: 0.012, target: waveParams.y, editor: { parent: USE_WAVE, slide: true, range: [0.0, 0.1], step: 0.001 } }
+        waveDirection: { value: [1.0, 0.15], target: waveParams.zw, editor: { parent: USE_WAVE } }
+        waveTiling: { value: [1.5, 1.0], target: waveTextureParams.xy, editor: { parent: USE_WAVE } }
+
+        causticTexture: { value: white, editor: { parent: USE_CAUSTIC } }
+        causticStrength: { value: 0.12, target: causticParams.x, editor: { parent: USE_CAUSTIC, slide: true, range: [0.0, 1.0], step: 0.001 } }
+        causticScale: { value: 2.5, target: causticParams.y, editor: { parent: USE_CAUSTIC, slide: true, range: [0.1, 10.0], step: 0.01 } }
+        causticSpeed: { value: 0.04, target: causticParams.z, editor: { parent: USE_CAUSTIC, slide: true, range: [-1.0, 1.0], step: 0.001 } }
+        causticSplit: { value: 1.0, target: causticParams.w, editor: { parent: USE_CAUSTIC, slide: true, range: [0.0, 5.0], step: 0.01 } }
+        causticDirection1: { value: 0.15, target: causticMotion.x, editor: { parent: USE_CAUSTIC, slide: true, range: [0.0, 1.0], step: 0.001 } }
+        causticDirection2: { value: 0.85, target: causticMotion.y, editor: { parent: USE_CAUSTIC, slide: true, range: [0.0, 1.0], step: 0.001 } }
+        causticBrightness: { value: 1.5, target: causticMotion.z, editor: { parent: USE_CAUSTIC, slide: true, range: [0.0, 5.0], step: 0.01 } }
+
+        depthDarkness: { value: 0.65, target: fadeParams.x, editor: { parent: USE_COLOR_STEP, slide: true, range: [0.0, 1.0], step: 0.01 } }
+        waterOpacity: { value: 0.9, target: fadeParams.y, editor: { slide: true, range: [0.0, 1.0], step: 0.01 } }
+        farReflectionBoost: { value: 0.0, target: fadeParams.z, editor: { parent: USE_TILING, slide: true, range: [0.0, 1.0], step: 0.001 } }
+        farReflectionCurve: { value: 3.0, target: fadeParams.w, editor: { parent: USE_TILING, slide: true, range: [1.0, 6.0], step: 0.1 } }
+        waterTint: { value: [1.0, 1.0, 1.0, 1.0], editor: { type: color } }
+}%
+
+CCProgram water-vs %{
+  precision highp float;
+
+  #include <builtin/uniforms/cc-global>
+  #if USE_LOCAL
+    #include <builtin/uniforms/cc-local>
+  #endif
+  #if SAMPLE_FROM_RT
+    #include <common/common-define>
+  #endif
+
+  in vec3 a_position;
+  in vec2 a_texCoord;
+  in vec4 a_color;
+
+  out vec4 color;
+  out vec2 uv0;
+
+  vec4 vert () {
+    vec4 pos = vec4(a_position, 1.0);
+
+    #if USE_LOCAL
+      pos = cc_matWorld * pos;
+    #endif
+
+    #if USE_PIXEL_ALIGNMENT
+      pos = cc_matView * pos;
+      pos.xyz = floor(pos.xyz);
+      pos = cc_matProj * pos;
+    #else
+      pos = cc_matViewProj * pos;
+    #endif
+
+    uv0 = a_texCoord;
+
+    // Land material enables this macro to correct RenderTexture Y orientation.
+    // Water material intentionally leaves it disabled to keep the mirrored image.
+    #if SAMPLE_FROM_RT
+      CC_HANDLE_RT_SAMPLE_FLIP(uv0);
+    #endif
+
+    color = a_color;
+    return pos;
+  }
+}%
+
+CCProgram water-fs %{
+  precision highp float;
+
+  #include <builtin/uniforms/cc-global>
+  #include <builtin/internal/embedded-alpha>
+  #include <builtin/internal/alpha-test>
+
+  in vec4 color;
+  in vec2 uv0;
+
+  #pragma builtin(local)
+  layout(set = 2, binding = 12) uniform sampler2D cc_spriteTexture;
+
+  #if USE_WAVE
+    uniform sampler2D waveTexture;
+  #endif
+
+  #if USE_CAUSTIC
+    uniform sampler2D causticTexture;
+  #endif
+
+  uniform WaterConstants {
+    vec4 uvParams;          // xy: base tiling, z: color step scale, w: alpha step scale
+    vec4 waveParams;        // x: speed, y: strength, zw: direction
+    vec4 waveTextureParams; // xy: wave texture tiling, zw: base RenderTexture UV offset
+    vec4 causticParams;     // x: strength, y: scale, z: speed, w: RGB split amount
+    vec4 causticMotion;     // x/y: two directions, z: brightness
+    vec4 fadeParams;        // x: depth darkness, y: opacity, z: far boost, w: far curve
+    vec4 waterTint;
+  };
+
+  const float PI = 3.141592653589793;
+
+  vec2 panner (vec2 uv, float direction01, float speed, vec2 offset, float tiling) {
+    float direction = direction01 * 2.0 - 1.0;
+    vec2 dir = vec2(cos(PI * direction), sin(PI * direction));
+    return dir * cc_time.x * speed + offset + uv * tiling;
+  }
+
+  vec3 rgbSplit (float splitAmount, sampler2D tex, vec2 uv) {
+    vec2 uvR = uv + vec2( splitAmount,  splitAmount);
+    vec2 uvG = uv + vec2( splitAmount, -splitAmount);
+    vec2 uvB = uv + vec2(-splitAmount, -splitAmount);
+
+    float r = texture(tex, uvR).r;
+    float g = texture(tex, uvG).g;
+    float b = texture(tex, uvB).b;
+    return vec3(r, g, b);
+  }
+
+  #if USE_CAUSTIC
+    vec3 calculateCaustic (vec2 baseUv) {
+      float scale = max(causticParams.y, 0.001);
+      float splitAmount = causticParams.w * 0.01;
+
+      vec2 uv1 = panner(
+        baseUv,
+        causticMotion.x,
+        causticParams.z,
+        vec2(0.0, 0.0),
+        1.0 / scale
+      );
+
+      vec2 uv2 = panner(
+        baseUv,
+        causticMotion.y,
+        causticParams.z * 0.93,
+        vec2(0.37, 0.17),
+        -1.0 / scale
+      );
+
+      vec3 layer1 = rgbSplit(splitAmount, causticTexture, uv1);
+      vec3 layer2 = rgbSplit(splitAmount, causticTexture, uv2);
+      return min(layer1, layer2) * causticParams.x * causticMotion.z;
+    }
+  #endif
+
+  vec4 frag () {
+    vec2 uv = uv0;
+
+    #if USE_TILING
+      uv = uv * uvParams.xy + waveTextureParams.zw;
+
+      // Preserve the near-water scale while progressively reaching farther
+      // into the captured sky in deep water.
+      float farDepth = pow(clamp(uv0.y, 0.0, 1.0), max(fadeParams.w, 1.0));
+      uv.y += farDepth * fadeParams.z;
+    #endif
+
+    #if USE_WAVE
+      vec2 waveUv = uv0 * waveTextureParams.xy
+        + cc_time.x * waveParams.x * waveParams.zw;
+
+      // Remap [0, 1] to [-1, 1] so the reflection does not drift in one direction.
+      vec2 waveOffset = (texture(waveTexture, waveUv).xy * 2.0 - 1.0)
+        * waveParams.y;
+      uv += waveOffset;
+    #endif
+
+    vec4 o = CCSampleWithAlphaSeparated(cc_spriteTexture, uv);
+
+    #if USE_CAUSTIC
+      o.rgb += calculateCaustic(uv0) * o.a;
+    #endif
+
+    #if USE_COLOR_STEP
+      // Safe reversed smoothstep: near the waterline stays bright, deeper pixels darken.
+      float depthFade = 1.0 - smoothstep(-0.1, 1.5, uv0.y * uvParams.z);
+      o.rgb *= mix(1.0, depthFade, fadeParams.x);
+    #endif
+
+    #if USE_ALPHA_STEP
+      float shoreAlpha = smoothstep(-0.2, 0.75, uv0.y * uvParams.w);
+      o.a *= shoreAlpha;
+    #endif
+
+    o.rgb *= waterTint.rgb;
+    o.a *= waterTint.a * fadeParams.y;
+    o *= color;
+
+    ALPHA_TEST(o);
+    return o;
+  }
+}%
