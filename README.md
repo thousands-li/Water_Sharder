@@ -1,5 +1,7 @@
 # Water_Sharder
 
+<div align="center"> <img src="assets/docs/Water_Sharder_Demo.gif" alt="水面Sharder展示" width="650"/> </div>
+
 ## 项目简介
 
 `Water_Sharder` 是一个基于 **Cocos Creator 3.8.7** 开发的 2D 水面倒影 Shader Demo，主要使用 **TypeScript** 和 Cocos Effect Shader 编写。项目围绕横版场景中的动态水面表现，实现了实时场景倒影、水波扰动、水下焦散、深浅变化、岸边透明过渡、角色移动跳跃和摄像机跟随等效果。
@@ -15,7 +17,7 @@
 - 视频转 GIF：ScreenToGif
 - 主要使用的 Cocos 能力：RenderTexture、Camera 分层、Sprite、SpriteFrame、Material、Effect Shader、Inspector 配置、Animation、UITransform
 
-![Water_Sharder 演示](assets/docs/Water_Sharder_Demo.gif)
+
 
 ## 项目做了什么
 
