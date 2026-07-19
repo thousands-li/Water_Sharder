@@ -1,6 +1,6 @@
 # Water_Sharder
 
-<div align="center"> <img src="assets/docs/Water_Sharder_Demo.gif" alt="水面Sharder展示" width="650"/> </div>
+![Water_Sharder 演示](assets/docs/Water_Sharder_Demo.gif)
 
 ## 项目简介
 
