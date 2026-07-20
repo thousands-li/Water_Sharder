@@ -24,7 +24,107 @@
     <div id="Cocos3dGameContainer">
       <canvas id="GameCanvas" width="1280" height="720" oncontextmenu="event.preventDefault()" tabindex="99"></canvas>
     </div>
+    <div id="LoadingOverlay" role="status" aria-live="polite" aria-label="加载中">
+      <div class="loading-panel">
+        <div class="loading-mark" aria-hidden="true"></div>
+        <div class="loading-title">加载中</div>
+        <div class="loading-status" data-loading-status>正在准备资源...</div>
+        <div class="loading-bar" aria-hidden="true"><span></span></div>
+      </div>
+    </div>
   </div>
   <%- include(cocosTemplate, {}) %>
+  <script>
+    (function () {
+      var overlay = document.getElementById('LoadingOverlay');
+      if (!overlay) {
+        return;
+      }
+
+      var status = overlay.querySelector('[data-loading-status]');
+      var hidden = false;
+
+      function setStatus(text) {
+        if (!hidden && status) {
+          status.textContent = text;
+        }
+      }
+
+      function hideLoading() {
+        if (hidden) {
+          return;
+        }
+
+        hidden = true;
+        overlay.classList.add('is-hidden');
+        window.setTimeout(function () {
+          if (overlay.parentNode) {
+            overlay.parentNode.removeChild(overlay);
+          }
+        }, 650);
+      }
+
+      function hideAfterFrame() {
+        window.requestAnimationFrame(function () {
+          window.requestAnimationFrame(hideLoading);
+        });
+      }
+
+      window.WaterShardLoader = {
+        hide: hideLoading,
+        setStatus: setStatus
+      };
+
+      window.setTimeout(function () { setStatus('正在加载资源...'); }, 1600);
+      window.setTimeout(function () { setStatus('正在进入游戏...'); }, 5200);
+      window.setTimeout(function () { setStatus('首次加载资源较大，请稍等...'); }, 11000);
+      window.setTimeout(function () { setStatus('马上就好...'); }, 18000);
+      window.setTimeout(hideLoading, 35000);
+
+      function bindCocosEvents() {
+        if (!window.System || !System.import) {
+          window.setTimeout(bindCocosEvents, 200);
+          return;
+        }
+
+        System.import('cc').then(function (cc) {
+          var director = cc && cc.director;
+          var Director = cc && cc.Director;
+          var game = cc && cc.game;
+          var Game = cc && cc.Game;
+
+          if (game && Game && Game.EVENT_GAME_INITED) {
+            var onGameInited = function () { setStatus('正在启动场景...'); };
+            if (game.once) {
+              game.once(Game.EVENT_GAME_INITED, onGameInited);
+            } else if (game.on) {
+              game.on(Game.EVENT_GAME_INITED, onGameInited);
+            }
+          }
+
+          if (director && Director && director.once) {
+            if (Director.EVENT_AFTER_SCENE_LAUNCH) {
+              director.once(Director.EVENT_AFTER_SCENE_LAUNCH, hideAfterFrame);
+            }
+
+            if (Director.EVENT_AFTER_DRAW) {
+              director.once(Director.EVENT_AFTER_DRAW, hideAfterFrame);
+            }
+          }
+        }).catch(function () {
+          // The fallback timer keeps the loading layer from staying forever.
+        });
+      }
+
+      bindCocosEvents();
+
+      window.addEventListener('error', function () {
+        setStatus('加载遇到问题，请刷新重试');
+      });
+      window.addEventListener('unhandledrejection', function () {
+        setStatus('加载遇到问题，请刷新重试');
+      });
+    }());
+  </script>
 </body>
 </html>

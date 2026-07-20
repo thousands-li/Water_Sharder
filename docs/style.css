@@ -72,6 +72,93 @@ canvas {
   display: block;
 }
 
+#LoadingOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #eaf8ff;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(61, 190, 255, 0.2), transparent 34%),
+    linear-gradient(180deg, #06151c 0%, #020609 100%);
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.45s ease, visibility 0.45s ease;
+  pointer-events: none;
+}
+
+#LoadingOverlay.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.loading-panel {
+  width: min(360px, 76%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-shadow: 0 1px 14px rgba(92, 216, 255, 0.25);
+}
+
+.loading-mark {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: 2px solid rgba(150, 220, 255, 0.2);
+  border-top-color: #8ee9ff;
+  border-right-color: rgba(142, 233, 255, 0.72);
+  animation: loading-spin 1s linear infinite;
+}
+
+.loading-title {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.loading-status {
+  min-height: 20px;
+  color: rgba(234, 248, 255, 0.76);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.loading-bar {
+  width: 100%;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(120, 210, 255, 0.15);
+}
+
+.loading-bar span {
+  display: block;
+  width: 42%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(103, 202, 255, 0), #8ee9ff, rgba(103, 202, 255, 0));
+  animation: loading-sweep 1.35s ease-in-out infinite;
+}
+
+@keyframes loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes loading-sweep {
+  0% {
+    transform: translateX(-120%);
+  }
+
+  100% {
+    transform: translateX(260%);
+  }
+}
+
 @media (max-width: 720px), (max-height: 460px) {
   :root {
     --stage-gap: 8px;
@@ -81,6 +168,23 @@ canvas {
     width: min(100%, calc((100dvh - (var(--stage-gap) * 2)) * 16 / 9));
     max-height: 100%;
     box-shadow: none;
+  }
+
+  .loading-panel {
+    gap: 10px;
+  }
+
+  .loading-mark {
+    width: 42px;
+    height: 42px;
+  }
+
+  .loading-title {
+    font-size: 20px;
+  }
+
+  .loading-status {
+    font-size: 12px;
   }
 }
 
