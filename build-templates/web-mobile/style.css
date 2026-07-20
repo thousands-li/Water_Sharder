@@ -1,0 +1,93 @@
+html {
+  -ms-touch-action: none;
+  width: 100%;
+  height: 100%;
+}
+
+body, canvas, div {
+  display: block;
+  outline: none;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+
+  user-select: none;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  -khtml-user-select: none;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+body {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: var(--stage-gap);
+  padding-top: max(var(--stage-gap), env(safe-area-inset-top));
+  padding-right: max(var(--stage-gap), env(safe-area-inset-right));
+  padding-bottom: max(var(--stage-gap), env(safe-area-inset-bottom));
+  padding-left: max(var(--stage-gap), env(safe-area-inset-left));
+  border: 0;
+  margin: 0;
+
+  cursor: default;
+  color: #d6e4ff;
+  background: #10131a;
+  text-align: center;
+  font-family: Helvetica, Verdana, Arial, sans-serif;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+canvas {
+  background-color: rgba(0, 0, 0, 0);
+}
+
+#GameDiv {
+  position: relative;
+  width: min(1280px, 100%, calc((100dvh - (var(--stage-gap) * 2)) * 16 / 9));
+  aspect-ratio: 16 / 9;
+  max-height: 100%;
+  overflow: hidden;
+  background: #000;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.38);
+}
+
+#Cocos3dGameContainer,
+#GameCanvas {
+  width: 100%;
+  height: 100%;
+}
+
+#GameCanvas {
+  display: block;
+}
+
+@media (max-width: 720px), (max-height: 460px) {
+  :root {
+    --stage-gap: 8px;
+  }
+
+  #GameDiv {
+    width: min(100%, calc((100dvh - (var(--stage-gap) * 2)) * 16 / 9));
+    max-height: 100%;
+    box-shadow: none;
+  }
+}
+
+:root {
+  --stage-gap: clamp(8px, 2vmin, 16px);
+  --safe-top: env(safe-area-inset-top);
+  --safe-right: env(safe-area-inset-right);
+  --safe-bottom: env(safe-area-inset-bottom);
+  --safe-left: env(safe-area-inset-left);
+}

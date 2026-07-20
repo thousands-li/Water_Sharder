@@ -1,6 +1,9 @@
 {
   "name": "Water_Sharder",
   "uuid": "5c551ae2-005c-4a80-b268-483820e2a938",
+  "scripts": {
+    "build:pages": "powershell -ExecutionPolicy Bypass -File scripts/build-pages.ps1"
+  },
   "creator": {
     "version": "3.8.7"
   }
