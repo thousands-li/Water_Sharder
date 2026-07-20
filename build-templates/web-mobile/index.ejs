@@ -33,7 +33,6 @@
       </div>
     </div>
   </div>
-  <%- include(cocosTemplate, {}) %>
   <script>
     (function () {
       var overlay = document.getElementById('LoadingOverlay');
@@ -43,6 +42,10 @@
 
       var status = overlay.querySelector('[data-loading-status]');
       var hidden = false;
+      var startedAt = Date.now();
+      var lastResourceAt = startedAt;
+      var lastResourceCount = 0;
+      var sawGameResource = false;
 
       function setStatus(text) {
         if (!hidden && status) {
@@ -70,6 +73,48 @@
         });
       }
 
+      function noteResource(name) {
+        if (!name || !/\/(?:assets|cocos-js|src)\//.test(name)) {
+          return;
+        }
+
+        sawGameResource = true;
+        lastResourceAt = Date.now();
+      }
+
+      function scanResourceEntries() {
+        var perf = window.performance;
+        if (!perf || !perf.getEntriesByType) {
+          return;
+        }
+
+        var entries = perf.getEntriesByType('resource');
+        for (var i = lastResourceCount; i < entries.length; i++) {
+          noteResource(entries[i].name);
+        }
+        lastResourceCount = entries.length;
+      }
+
+      function watchResourceIdle() {
+        scanResourceEntries();
+
+        var now = Date.now();
+        if (
+          !hidden &&
+          sawGameResource &&
+          now - startedAt > 3200 &&
+          now - lastResourceAt > 2600
+        ) {
+          setStatus('正在启动场景...');
+          hideAfterFrame();
+          return;
+        }
+
+        if (!hidden) {
+          window.setTimeout(watchResourceIdle, 400);
+        }
+      }
+
       window.WaterShardLoader = {
         hide: hideLoading,
         setStatus: setStatus
@@ -80,10 +125,24 @@
       window.setTimeout(function () { setStatus('首次加载资源较大，请稍等...'); }, 11000);
       window.setTimeout(function () { setStatus('马上就好...'); }, 18000);
       window.setTimeout(hideLoading, 35000);
+      window.setTimeout(watchResourceIdle, 1200);
+
+      if (window.PerformanceObserver) {
+        try {
+          var resourceObserver = new PerformanceObserver(function (list) {
+            list.getEntries().forEach(function (entry) {
+              noteResource(entry.name);
+            });
+          });
+          resourceObserver.observe({ entryTypes: ['resource'] });
+        } catch (err) {
+          // Some older browsers do not allow observing resource entries.
+        }
+      }
 
       function bindCocosEvents() {
         if (!window.System || !System.import) {
-          window.setTimeout(bindCocosEvents, 200);
+          window.setTimeout(bindCocosEvents, 50);
           return;
         }
 
@@ -126,5 +185,6 @@
       });
     }());
   </script>
+  <%- include(cocosTemplate, {}) %>
 </body>
 </html>
