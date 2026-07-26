@@ -1,10 +1,10 @@
-# Water_Sharder
+# Water_Shader
 
-![Water_Sharder 演示](assets/docs/Water_Sharder_Demo.gif)
+![Water_Shader 演示](assets/docs/Water_Shader_Demo.gif)
 
 ## 项目简介
 
-`Water_Sharder` 是一个基于 **Cocos Creator 3.8.7** 开发的 2D 水面倒影 Shader Demo，主要使用 **TypeScript** 和 Cocos Effect Shader 编写。项目围绕横版场景中的动态水面表现，实现了实时场景倒影、水波扰动、水下焦散、深浅变化、岸边透明过渡、角色移动跳跃和摄像机跟随等效果。
+`Water_Shader` 是一个基于 **Cocos Creator 3.8.7** 开发的 2D 水面倒影 Shader Demo，主要使用 **TypeScript** 和 Cocos Effect Shader 编写。项目围绕横版场景中的动态水面表现，实现了实时场景倒影、水波扰动、水下焦散、深浅变化、岸边透明过渡、角色移动跳跃和摄像机跟随等效果。
 
 项目的核心思路是：先使用独立摄像机把游戏场景渲染到 `RenderTexture`，再把这张纹理分别用于正常画面显示和水面倒影显示。水面部分通过自定义 Shader 对倒影纹理做 UV 扰动、透明度渐变、颜色衰减和焦散叠加，从而形成动态水面效果。
 
@@ -132,7 +132,7 @@ assets/
 │  │  └─ water_caustic_512.png
 │  └─ pictures/
 └─ docs/
-   └─ Water_Sharder_Demo.gif
+   └─ Water_Shader_Demo.gif
 ```
 
 ## 还差什么
